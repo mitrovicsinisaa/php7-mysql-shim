@@ -21,14 +21,14 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
     /**
      * @var array Location of binaries
      */
-    protected static $bin = array();
+    protected static $bin = [];
 
     /**
      * @var array List of databases created
      */
-    protected static $dbs = array();
+    protected static $dbs = [];
 
-    public function __construct($name = null, array $data = array(), $dataName = '')
+    public function __construct($name = null, array $data = [], $dataName = '')
     {
         if (getenv('MYSQL_HOST') !== false) {
             static::$host = getenv('MYSQL_HOST');
@@ -58,7 +58,7 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
     {
         ini_set('mysqli.default_host', static::$host);
         ini_set('mysqli.default_user', static::$username);
-        ini_set('mysqli.default_pw', (static::$password === null) ? '' : static::$password);
+        ini_set('mysqli.default_pw', static::$password ?? '');
 
         $mysql = mysql_connect();
         $this->assertConnection($mysql);
@@ -374,14 +374,7 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
             $i++;
 
             $this->assertEquals(
-                array(
-                    'Field',
-                    'Type',
-                    'Null',
-                    'Key',
-                    'Default',
-                    'Extra'
-                ),
+                ['Field', 'Type', 'Null', 'Key', 'Default', 'Extra'],
                 array_keys($row)
             );
         }
@@ -427,14 +420,7 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
         while ($row = mysql_fetch_assoc($result)) {
             $i++;
             $this->assertEquals(
-                array(
-                    'Field',
-                    'Type',
-                    'Null',
-                    'Key',
-                    'Default',
-                    'Extra'
-                ),
+                ['Field', 'Type', 'Null', 'Key', 'Default', 'Extra'],
                 array_keys($row)
             );
         }
@@ -525,7 +511,7 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
         $this->assertEquals('testing', mysql_field_table($result, 11));
         $this->assertEquals('eleven', mysql_field_name($result, 11));
         $this->assertEquals('blob', mysql_field_type($result, 11));
-        $this->assertEquals(16777215, mysql_field_len($result, 11));
+        $this->assertEquals(16_777_215, mysql_field_len($result, 11));
         $this->assertEquals('blob', mysql_field_flags($result, 11));
     }
 
@@ -603,7 +589,7 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
         $this->assertEquals('testing', mysql_field_table($result, 11));
         $this->assertEquals('eleven', mysql_field_name($result, 11));
         $this->assertEquals('blob', mysql_field_type($result, 11));
-        $this->assertEquals(16777215*3, mysql_field_len($result, 11));
+        $this->assertEquals(16_777_215*3, mysql_field_len($result, 11));
         $this->assertEquals('blob', mysql_field_flags($result, 11));
     }
 
@@ -685,7 +671,7 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
         $this->expectWarning();
         $this->expectWarningMessageMatches('@' .$error. '@');
 
-        if ($args !== array()) {
+        if ($args !== []) {
             array_unshift($args, null);
             call_user_func_array($function, $args);
         }
@@ -710,7 +696,7 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
         $result = mysql_query('SELECT one, two FROM testing LIMIT 4');
         $this->assertResult($result);
 
-        $this->assertEquals(count($results), mysql_num_rows($result));
+        $this->assertEquals(is_countable($results) ? count($results) : 0, mysql_num_rows($result));
 
         $function = function ($result) use ($function, $resultType) {
             if ($resultType) {
@@ -720,12 +706,12 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
         };
 
         $i = 0;
-        while ($row = $function($result, $resultType)) {
+        while ($row = $function($result)) {
             $this->assertEquals($results[$i], $row);
             $i++;
         }
 
-        $this->assertEquals(count($results), $i);
+        $this->assertEquals(is_countable($results) ? count($results) : 0, $i);
     }
 
     /**
@@ -754,7 +740,7 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
                 return mysql_fetch_object($result);
             }
 
-            if ($params === array()) {
+            if ($params === []) {
                 return mysql_fetch_object($result, $className);
             }
 
@@ -975,68 +961,7 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
         $result = mysql_query("SELECT * FROM testing WHERE one = 'six' LIMIT 1");
         $this->assertNotFalse($result);
 
-        $map = array(
-            0 => array(
-                'name' => 'id', 'max_length' => 1, 'not_null' => 1, 'primary_key' => 1,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 1, 'blob' => 0,
-                'type' => 'int', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            1 => array(
-                'name' => 'one', 'max_length' => 3, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            2 => array(
-                'name' => 'two', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 1, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            3 => array(
-                'name' => 'three', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            4 => array(
-                'name' => 'four', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            5 => array(
-                'name' => 'five', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            6 => array(
-                'name' => 'six', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            7 => array(
-                'name' => 'seven', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            8 => array(
-                'name' => 'eight', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            9 => array(
-                'name' => 'nine', 'max_length' => 3, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            10 => array(
-                'name' => 'ten', 'max_length' => 3, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            11 => array(
-                'name' => 'eleven', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 1,
-                'type' => 'blob', 'unsigned' => 0, 'zerofill' => 0
-            ),
-        );
+        $map = [0 => ['name' => 'id', 'max_length' => 1, 'not_null' => 1, 'primary_key' => 1, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 1, 'blob' => 0, 'type' => 'int', 'unsigned' => 0, 'zerofill' => 0], 1 => ['name' => 'one', 'max_length' => 3, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 2 => ['name' => 'two', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 1, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 3 => ['name' => 'three', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 4 => ['name' => 'four', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 5 => ['name' => 'five', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 6 => ['name' => 'six', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 7 => ['name' => 'seven', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 8 => ['name' => 'eight', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 9 => ['name' => 'nine', 'max_length' => 3, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 10 => ['name' => 'ten', 'max_length' => 3, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 11 => ['name' => 'eleven', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 1, 'type' => 'blob', 'unsigned' => 0, 'zerofill' => 0]];
 
         foreach ($map as $index => $values) {
             $field = mysql_fetch_field($result, $index);
@@ -1065,33 +990,7 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
 
         $row = mysql_fetch_assoc($result);
 
-        $map = array(
-            1 => array(
-                'name' => 'one', 'max_length' => 5, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            3 => array(
-                'name' => 'three', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            6 => array(
-                'name' => 'six', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            10 => array(
-                'name' => 'ten', 'max_length' => 5, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            11 => array(
-                'name' => 'eleven', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 1,
-                'type' => 'blob', 'unsigned' => 0, 'zerofill' => 0
-            ),
-        );
+        $map = [1 => ['name' => 'one', 'max_length' => 5, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 3 => ['name' => 'three', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 6 => ['name' => 'six', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 10 => ['name' => 'ten', 'max_length' => 5, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 11 => ['name' => 'eleven', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 1, 'type' => 'blob', 'unsigned' => 0, 'zerofill' => 0]];
 
         foreach ($map as $index => $values) {
             $field = mysql_fetch_field($result, $index);
@@ -1118,68 +1017,7 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
         $result = mysql_query("SELECT * FROM testing WHERE one = 'seven' LIMIT 1");
         $this->assertNotFalse($result);
 
-        $map = array(
-            0 => array(
-                'name' => 'id', 'max_length' => 1, 'not_null' => 1, 'primary_key' => 1,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 1, 'blob' => 0,
-                'type' => 'int', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            1 => array(
-                'name' => 'one', 'max_length' => 5, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            2 => array(
-                'name' => 'two', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 1, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            3 => array(
-                'name' => 'three', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            4 => array(
-                'name' => 'four', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            5 => array(
-                'name' => 'five', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            6 => array(
-                'name' => 'six', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            7 => array(
-                'name' => 'seven', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            8 => array(
-                'name' => 'eight', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            9 => array(
-                'name' => 'nine', 'max_length' => 5, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            10 => array(
-                'name' => 'ten', 'max_length' => 5, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0,
-                'type' => 'string', 'unsigned' => 0, 'zerofill' => 0
-            ),
-            11 => array(
-                'name' => 'eleven', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0,
-                'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 1,
-                'type' => 'blob', 'unsigned' => 0, 'zerofill' => 0
-            ),
-        );
+        $map = [0 => ['name' => 'id', 'max_length' => 1, 'not_null' => 1, 'primary_key' => 1, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 1, 'blob' => 0, 'type' => 'int', 'unsigned' => 0, 'zerofill' => 0], 1 => ['name' => 'one', 'max_length' => 5, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 2 => ['name' => 'two', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 1, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 3 => ['name' => 'three', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 4 => ['name' => 'four', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 5 => ['name' => 'five', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 6 => ['name' => 'six', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 7 => ['name' => 'seven', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 1, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 8 => ['name' => 'eight', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 9 => ['name' => 'nine', 'max_length' => 5, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 10 => ['name' => 'ten', 'max_length' => 5, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 0, 'type' => 'string', 'unsigned' => 0, 'zerofill' => 0], 11 => ['name' => 'eleven', 'max_length' => 1, 'not_null' => 0, 'primary_key' => 0, 'unique_key' => 0, 'multiple_key' => 0, 'numeric' => 0, 'blob' => 1, 'type' => 'blob', 'unsigned' => 0, 'zerofill' => 0]];
 
         foreach ($map as $index => $values) {
             $field = mysql_fetch_field($result);
@@ -1251,208 +1089,30 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
 
     public function mysql_fetch_DataProvider()
     {
-        $numeric = array(
-            array('1', '1'),
-            array('2', '2'),
-            array('3', '3'),
-            array('4', '4'),
-        );
+        $numeric = [['1', '1'], ['2', '2'], ['3', '3'], ['4', '4']];
 
-        $assoc = array(
-            array('one' => '1', 'two' => '1'),
-            array('one' => '2', 'two' => '2'),
-            array('one' => '3', 'two' => '3'),
-            array('one' => '4', 'two' => '4'),
-        );
+        $assoc = [['one' => '1', 'two' => '1'], ['one' => '2', 'two' => '2'], ['one' => '3', 'two' => '3'], ['one' => '4', 'two' => '4']];
 
-        $array = array(
-            array('1', '1', 'one' => '1', 'two' => '1'),
-            array('2', '2', 'one' => '2', 'two' => '2'),
-            array('3', '3', 'one' => '3', 'two' => '3'),
-            array('4', '4', 'one' => '4', 'two' => '4'),
-        );
+        $array = [['1', '1', 'one' => '1', 'two' => '1'], ['2', '2', 'one' => '2', 'two' => '2'], ['3', '3', 'one' => '3', 'two' => '3'], ['4', '4', 'one' => '4', 'two' => '4']];
 
-        $object = array(
-            (object) array('one' => '1', 'two' => '1'),
-            (object) array('one' => '2', 'two' => '2'),
-            (object) array('one' => '3', 'two' => '3'),
-            (object) array('one' => '4', 'two' => '4'),
-        );
+        $object = [(object) ['one' => '1', 'two' => '1'], (object) ['one' => '2', 'two' => '2'], (object) ['one' => '3', 'two' => '3'], (object) ['one' => '4', 'two' => '4']];
 
-        return array(
-            array(
-                'function' => 'mysql_fetch_array',
-                'results' => $assoc,
-                'resultType' => MYSQL_ASSOC
-            ),
-            array(
-                'function' => 'mysql_fetch_array',
-                'results' => $array,
-                'resultType' => MYSQL_BOTH
-            ),
-            array(
-                'function' => 'mysql_fetch_array',
-                'results' => $numeric,
-                'resultType' => MYSQL_NUM
-            ),
-            array(
-                'function' => 'mysql_fetch_assoc',
-                'results' => $assoc
-            ),
-            array(
-                'function' => 'mysql_fetch_row',
-                'results' => $numeric
-            ),
-            array(
-                'function' => 'mysql_fetch_object',
-                'results' => $object,
-            )
-        );
+        return [['function' => 'mysql_fetch_array', 'results' => $assoc, 'resultType' => MYSQL_ASSOC], ['function' => 'mysql_fetch_array', 'results' => $array, 'resultType' => MYSQL_BOTH], ['function' => 'mysql_fetch_array', 'results' => $numeric, 'resultType' => MYSQL_NUM], ['function' => 'mysql_fetch_assoc', 'results' => $assoc], ['function' => 'mysql_fetch_row', 'results' => $numeric], ['function' => 'mysql_fetch_object', 'results' => $object]];
     }
 
     public function mysql_fetch_no_rows_dataProvider()
     {
-        return array(
-            array(
-                'function' => 'mysql_fetch_array',
-            ),
-            array(
-                'function' => 'mysql_fetch_assoc',
-            ),
-            array(
-                'function' => 'mysql_fetch_row',
-            ),
-            array(
-                'function' => 'mysql_fetch_object',
-            ),
-        );
+        return [['function' => 'mysql_fetch_array'], ['function' => 'mysql_fetch_assoc'], ['function' => 'mysql_fetch_row'], ['function' => 'mysql_fetch_object']];
     }
 
     public function mysql_fetch_object_dataProvider()
     {
-        return array(
-            array(
-                'class' => null,
-                'params' => array(),
-                'expectedParams' => null,
-            ),
-            array(
-                'class' => '\Dshafik\MySQL\Tests\TestResult',
-                'params' => array(),
-                'expectedParams' => array(
-                    'foo' => TestResult::DEFAULT_PARAM_VALUE,
-                    'bar' => TestResult::DEFAULT_PARAM_VALUE,
-                )
-            ),
-            array(
-                'class' => '\Dshafik\MySQL\Tests\TestResult',
-                'params' => array(TestResult::SET_VALUE, TestResult::SET_VALUE + 1),
-                'expectedParams' => array(
-                    'foo' => TestResult::SET_VALUE,
-                    'bar' => TestResult::SET_VALUE + 1
-                )
-            )
-        );
+        return [['class' => null, 'params' => [], 'expectedParams' => null], ['class' => '\\' . \Dshafik\MySQL\Tests\TestResult::class, 'params' => [], 'expectedParams' => ['foo' => TestResult::DEFAULT_PARAM_VALUE, 'bar' => TestResult::DEFAULT_PARAM_VALUE]], ['class' => '\\' . \Dshafik\MySQL\Tests\TestResult::class, 'params' => [TestResult::SET_VALUE, TestResult::SET_VALUE + 1], 'expectedParams' => ['foo' => TestResult::SET_VALUE, 'bar' => TestResult::SET_VALUE + 1]]];
     }
 
     public function mysql_function_invalid_result_DataProvider()
     {
-        return array(
-            array(
-                'function' => 'mysql_result',
-                'message' => "mysql_result\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(0)
-            ),
-            array(
-                'function' => 'mysql_num_rows',
-                'message' => "mysql_num_rows\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(),
-            ),
-            array(
-                'function' => 'mysql_num_fields',
-                'message' => "mysql_num_fields\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(),
-            ),
-            array(
-                'function' => 'mysql_fetch_row',
-                'message' => "mysql_fetch_row\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(),
-            ),
-            array(
-                'function' => 'mysql_fetch_array',
-                'message' => "mysql_fetch_array\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(),
-            ),
-            array(
-                'function' => 'mysql_fetch_assoc',
-                'message' => "mysql_fetch_assoc\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(),
-            ),
-            array(
-                'function' => 'mysql_fetch_object',
-                'message' => "(mysql_fetch_object\(\): )?supplied argument is not a valid MySQL result resource",
-                'args' => array('StdClass')
-            ),
-            array(
-                'function' => 'mysql_data_seek',
-                'message' => "mysql_data_seek\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(0)
-            ),
-            array(
-                'function' => 'mysql_fetch_lengths',
-                'message' => "mysql_fetch_lengths\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array()
-            ),
-            array(
-                'function' => 'mysql_fetch_field',
-                'message' => "mysql_fetch_field\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array()
-            ),
-            array(
-                'function' => 'mysql_field_seek',
-                'message' => "mysql_field_seek\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(0)
-            ),
-            array(
-                'function' => 'mysql_free_result',
-                'message' => "mysql_free_result\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array()
-            ),
-            array(
-                'function' => 'mysql_field_name',
-                'message' => "mysql_field_name\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(0)
-            ),
-            array(
-                'function' => 'mysql_field_table',
-                'message' => "mysql_field_table\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(0)
-            ),
-            array(
-                'function' => 'mysql_field_len',
-                'message' => "mysql_field_len\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(0)
-            ),
-            array(
-                'function' => 'mysql_field_type',
-                'message' => "mysql_field_type\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(0)
-            ),
-            array(
-                'function' => 'mysql_field_flags',
-                'message' => "mysql_field_flags\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(0)
-            ),
-            array(
-                'function' => 'mysql_db_name',
-                'message' => "mysql_db_name\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(0),
-            ),
-            array(
-                'function' => 'mysql_tablename',
-                'message' => "mysql_tablename\(\) expects parameter 1 to be resource, (null|NULL) given",
-                'args' => array(0),            ),
-        );
+        return [['function' => 'mysql_result', 'message' => "mysql_result\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => [0]], ['function' => 'mysql_num_rows', 'message' => "mysql_num_rows\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => []], ['function' => 'mysql_num_fields', 'message' => "mysql_num_fields\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => []], ['function' => 'mysql_fetch_row', 'message' => "mysql_fetch_row\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => []], ['function' => 'mysql_fetch_array', 'message' => "mysql_fetch_array\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => []], ['function' => 'mysql_fetch_assoc', 'message' => "mysql_fetch_assoc\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => []], ['function' => 'mysql_fetch_object', 'message' => "(mysql_fetch_object\(\): )?supplied argument is not a valid MySQL result resource", 'args' => ['StdClass']], ['function' => 'mysql_data_seek', 'message' => "mysql_data_seek\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => [0]], ['function' => 'mysql_fetch_lengths', 'message' => "mysql_fetch_lengths\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => []], ['function' => 'mysql_fetch_field', 'message' => "mysql_fetch_field\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => []], ['function' => 'mysql_field_seek', 'message' => "mysql_field_seek\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => [0]], ['function' => 'mysql_free_result', 'message' => "mysql_free_result\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => []], ['function' => 'mysql_field_name', 'message' => "mysql_field_name\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => [0]], ['function' => 'mysql_field_table', 'message' => "mysql_field_table\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => [0]], ['function' => 'mysql_field_len', 'message' => "mysql_field_len\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => [0]], ['function' => 'mysql_field_type', 'message' => "mysql_field_type\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => [0]], ['function' => 'mysql_field_flags', 'message' => "mysql_field_flags\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => [0]], ['function' => 'mysql_db_name', 'message' => "mysql_db_name\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => [0]], ['function' => 'mysql_tablename', 'message' => "mysql_tablename\(\) expects parameter 1 to be resource, (null|NULL) given", 'args' => [0]]];
     }
 
     /**
@@ -1550,16 +1210,11 @@ class MySqlShimTest extends \Yoast\PHPUnitPolyfills\TestCases\TestCase
 }
 
 class TestResult {
-    const DEFAULT_VALUE = 1;
-    const DEFAULT_PARAM_VALUE = 2;
-    const SET_VALUE = 3;
+    final public const DEFAULT_VALUE = 1;
+    final public const DEFAULT_PARAM_VALUE = 2;
+    final public const SET_VALUE = 3;
 
-    public $foo = self::DEFAULT_VALUE;
-    public $bar = self::DEFAULT_VALUE;
-
-    public function __construct($foo = self::DEFAULT_PARAM_VALUE, $bar = self::DEFAULT_PARAM_VALUE)
+    public function __construct(public $foo = self::DEFAULT_PARAM_VALUE, public $bar = self::DEFAULT_PARAM_VALUE)
     {
-        $this->foo = $foo;
-        $this->bar = $bar;
     }
 }

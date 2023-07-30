@@ -57,7 +57,7 @@ namespace {
             }
 
             $socket = '';
-            if (strpos($hostname, ':/') === 0) {
+            if (str_starts_with((string) $hostname, ':/')) {
                 // it's a unix socket
                 $socket = $hostname;
                 $hostname = 'localhost';
@@ -73,7 +73,7 @@ namespace {
             }
 
             /* A custom port can be specified by appending the hostname with :{port} e.g. hostname:3307 */
-            if (preg_match('/^(.+):([\d]+)$/', $hostname, $port_matches) === 1 && $port_matches[1] !== "p") {
+            if (preg_match('/^(.+):([\d]+)$/', (string) $hostname, $port_matches) === 1 && $port_matches[1] !== "p") {
                 $hostname = $port_matches[1];
                 $port = (int) $port_matches[2];
             } else {
@@ -88,7 +88,7 @@ namespace {
                 }
                 MySQL::$last_connection = $conn;
                 $conn->hash = $hash; // @phpstan-ignore-line
-                MySQL::$connections[$hash] = array('refcount' => 1, 'conn' => $conn);
+                MySQL::$connections[$hash] = ['refcount' => 1, 'conn' => $conn];
 
                 return $conn;
             }
@@ -116,7 +116,7 @@ namespace {
                 // @codeCoverageIgnoreEnd
 
                 $conn->hash = $hash; // @phpstan-ignore-line
-                MySQL::$connections[$hash] = array('refcount' => 1, 'conn' => $conn);
+                MySQL::$connections[$hash] = ['refcount' => 1, 'conn' => $conn];
 
                 return $conn;
             } catch (Throwable $e) {
@@ -173,7 +173,7 @@ namespace {
 
             return mysqli_query(
                 $link,
-                'USE `' . mysqli_real_escape_string($link, $databaseName) . '`'
+                'USE `' . mysqli_real_escape_string($link, (string) $databaseName) . '`'
             ) !== false;
         }
 
@@ -221,8 +221,8 @@ namespace {
 
             $query = sprintf(
                 'SHOW COLUMNS FROM `%s`.`%s`',
-                mysqli_real_escape_string($link, $databaseName),
-                mysqli_real_escape_string($link, $tableName)
+                mysqli_real_escape_string($link, (string) $databaseName),
+                mysqli_real_escape_string($link, (string) $tableName)
             );
 
             $result = mysqli_query($link, $query);
@@ -286,8 +286,8 @@ namespace {
             }
 
             $found = true;
-            if (strpos($field, '.') !== false) {
-                list($table, $name) = explode('.', $field);
+            if (str_contains((string) $field, '.')) {
+                [$table, $name] = explode('.', (string) $field);
                 $i = 0;
                 $found = false;
                 mysqli_field_seek($result, 0);
@@ -376,7 +376,7 @@ namespace {
             return mysqli_fetch_assoc($result) ?: false;
         }
 
-        function mysql_fetch_object($result, $class = null, array $params = array()) /* : object|null */
+        function mysql_fetch_object($result, $class = null, array $params = []) /* : object|null */
         {
             if (!MySQL::checkValidResult($result, __FUNCTION__)) {
                 // @codeCoverageIgnoreStart
@@ -415,7 +415,7 @@ namespace {
 
         function mysql_fetch_field($result, $field_offset = null) /* : object|*/
         {
-            static $fields = array();
+            static $fields = [];
 
             if (!MySQL::checkValidResult($result, __FUNCTION__)) {
                 // @codeCoverageIgnoreStart
@@ -433,7 +433,7 @@ namespace {
             } else {
                 $i = 0;
                 if (isset($fields[$result_hash])) {
-                    $i = count($fields[$result_hash]);
+                    $i = is_countable($fields[$result_hash]) ? count($fields[$result_hash]) : 0;
                 }
 
                 while ($i <= $field_offset) {
@@ -629,7 +629,7 @@ namespace {
 
         function mysql_real_escape_string($unescapedString, mysqli $link = null)
         {
-            return mysqli_real_escape_string(MySQL::getConnection($link), $unescapedString);
+            return mysqli_real_escape_string(MySQL::getConnection($link), (string) $unescapedString);
         }
 
         function mysql_stat(mysqli $link = null)
@@ -788,7 +788,7 @@ namespace Dshafik {
     class MySQL
     {
         public static $last_connection;
-        public static $connections = array();
+        public static $connections = [];
 
         public static function getConnection($link = null, $func = null)
         {
@@ -816,7 +816,7 @@ namespace Dshafik {
                 if ($field === false) {
                     return false;
                 }
-            } catch (Exception $e) {
+            } catch (Exception) {
                 trigger_error(
                     sprintf(
                         'mysql_field_%s(): Field %d is invalid for MySQL result index %s',
@@ -840,11 +840,7 @@ namespace Dshafik {
                 return static::getFieldFlags($field->flags);
             }
 
-            if (isset($field->{$what})) {
-                return $field->{$what};
-            }
-
-            return false;
+            return $field->{$what} ?? false;
         }
 
         public static function checkValidResult($result, $function)
@@ -890,7 +886,7 @@ namespace Dshafik {
         public static function escapeString($unescapedString)
         {
             $escapedString = '';
-            for ($i = 0, $max = strlen($unescapedString); $i < $max; $i++) {
+            for ($i = 0, $max = strlen((string) $unescapedString); $i < $max; $i++) {
                 $escapedString .= self::escapeChar($unescapedString[$i]);
             }
 
@@ -900,22 +896,9 @@ namespace Dshafik {
         protected static function getFieldFlags($what)
         {
             // Order of flags taken from http://lxr.php.net/xref/PHP_5_6/ext/mysql/php_mysql.c#2507
-            $flags = array(
-                MYSQLI_NOT_NULL_FLAG => 'not_null',
-                MYSQLI_PRI_KEY_FLAG => 'primary_key',
-                MYSQLI_UNIQUE_KEY_FLAG => 'unique_key',
-                MYSQLI_MULTIPLE_KEY_FLAG => 'multiple_key',
-                MYSQLI_BLOB_FLAG => 'blob',
-                MYSQLI_UNSIGNED_FLAG => 'unsigned',
-                MYSQLI_ZEROFILL_FLAG => 'zerofill',
-                MYSQLI_BINARY_FLAG => 'binary',
-                MYSQLI_ENUM_FLAG => 'enum',
-                MYSQLI_SET_FLAG => 'set',
-                MYSQLI_AUTO_INCREMENT_FLAG => 'auto_increment',
-                MYSQLI_TIMESTAMP_FLAG => 'timestamp',
-            );
+            $flags = [MYSQLI_NOT_NULL_FLAG => 'not_null', MYSQLI_PRI_KEY_FLAG => 'primary_key', MYSQLI_UNIQUE_KEY_FLAG => 'unique_key', MYSQLI_MULTIPLE_KEY_FLAG => 'multiple_key', MYSQLI_BLOB_FLAG => 'blob', MYSQLI_UNSIGNED_FLAG => 'unsigned', MYSQLI_ZEROFILL_FLAG => 'zerofill', MYSQLI_BINARY_FLAG => 'binary', MYSQLI_ENUM_FLAG => 'enum', MYSQLI_SET_FLAG => 'set', MYSQLI_AUTO_INCREMENT_FLAG => 'auto_increment', MYSQLI_TIMESTAMP_FLAG => 'timestamp'];
 
-            $fieldFlags = array();
+            $fieldFlags = [];
             foreach ($flags as $flag => $value) {
                 if ($what & $flag) {
                     $fieldFlags[] = $value;
@@ -927,67 +910,21 @@ namespace Dshafik {
 
         protected static function getFieldType($what)
         {
-            $types = array(
-                MYSQLI_TYPE_STRING => 'string',
-                MYSQLI_TYPE_VAR_STRING => 'string',
-                MYSQLI_TYPE_ENUM => 'string',
-                MYSQLI_TYPE_SET => 'string',
+            $types = [MYSQLI_TYPE_STRING => 'string', MYSQLI_TYPE_VAR_STRING => 'string', MYSQLI_TYPE_ENUM => 'string', MYSQLI_TYPE_SET => 'string', MYSQLI_TYPE_LONG => 'int', MYSQLI_TYPE_TINY => 'int', MYSQLI_TYPE_SHORT => 'int', MYSQLI_TYPE_INT24 => 'int', MYSQLI_TYPE_LONGLONG => 'int', MYSQLI_TYPE_DECIMAL => 'real', MYSQLI_TYPE_FLOAT => 'real', MYSQLI_TYPE_DOUBLE => 'real', MYSQLI_TYPE_NEWDECIMAL => 'real', MYSQLI_TYPE_TINY_BLOB => 'blob', MYSQLI_TYPE_MEDIUM_BLOB => 'blob', MYSQLI_TYPE_LONG_BLOB => 'blob', MYSQLI_TYPE_BLOB => 'blob', MYSQLI_TYPE_NEWDATE => 'date', MYSQLI_TYPE_DATE => 'date', MYSQLI_TYPE_TIME => 'time', MYSQLI_TYPE_YEAR => 'year', MYSQLI_TYPE_DATETIME => 'datetime', MYSQLI_TYPE_TIMESTAMP => 'timestamp', MYSQLI_TYPE_NULL => 'null', MYSQLI_TYPE_GEOMETRY => 'geometry'];
 
-                MYSQLI_TYPE_LONG => 'int',
-                MYSQLI_TYPE_TINY => 'int',
-                MYSQLI_TYPE_SHORT => 'int',
-                MYSQLI_TYPE_INT24 => 'int',
-                MYSQLI_TYPE_LONGLONG => 'int',
-
-                MYSQLI_TYPE_DECIMAL => 'real',
-                MYSQLI_TYPE_FLOAT => 'real',
-                MYSQLI_TYPE_DOUBLE => 'real',
-                MYSQLI_TYPE_NEWDECIMAL => 'real',
-
-                MYSQLI_TYPE_TINY_BLOB => 'blob',
-                MYSQLI_TYPE_MEDIUM_BLOB => 'blob',
-                MYSQLI_TYPE_LONG_BLOB => 'blob',
-                MYSQLI_TYPE_BLOB => 'blob',
-
-                MYSQLI_TYPE_NEWDATE => 'date',
-                MYSQLI_TYPE_DATE => 'date',
-                MYSQLI_TYPE_TIME => 'time',
-                MYSQLI_TYPE_YEAR => 'year',
-                MYSQLI_TYPE_DATETIME => 'datetime',
-                MYSQLI_TYPE_TIMESTAMP => 'timestamp',
-
-                MYSQLI_TYPE_NULL => 'null',
-
-                MYSQLI_TYPE_GEOMETRY => 'geometry',
-            );
-
-            return isset($types[$what]) ? $types[$what] : 'unknown';
+            return $types[$what] ?? 'unknown';
         }
 
         protected static function escapeChar($char)
         {
-            switch ($char) {
-                case "\0":
-                    $esc = "\\0";
-                    break;
-                case "\n":
-                    $esc = "\\n";
-                    break;
-                case "\r":
-                    $esc = "\\r";
-                    break;
-                case '\\':
-                case '\'':
-                case '"':
-                    $esc = "\\{$char}";
-                    break;
-                case "\032":
-                    $esc = "\\Z";
-                    break;
-                default:
-                    $esc = $char;
-                    break;
-            }
+            $esc = match ($char) {
+                "\0" => "\\0",
+                "\n" => "\\n",
+                "\r" => "\\r",
+                '\\', '\'', '"' => "\\{$char}",
+                "\032" => "\\Z",
+                default => $char,
+            };
 
             return $esc;
         }
